@@ -1,0 +1,51 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.43.1
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - .docker/prometheus:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana:9.5.1
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - .docker/grafana:/var/lib/grafana
+    ports:
+      - 8000:3000
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - 4317:4317
+      - 16686:16686
+
+  postgres:
+    image: postgres:11-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: url-shortener
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST: postgres
+    ports:
+      - "8001:5432"
+    volumes:
+      - .docker/pg:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@email.com"
+      PGADMIN_DEFAULT_PASSWORD: "password"
+    ports:
+      - "8002:80"
+    volumes:
+      - .docker/pgadmin:/var/lib/pgadmin
