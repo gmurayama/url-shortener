@@ -7,7 +7,7 @@ type UseCases interface {
 
 	// Expand receives a shortened URL and returns the original URL
 	// e.g. abc123 -> http://www.google.com
-	Expand(url string) (string, error)
+	Expand(shortened string) (string, error)
 }
 
 type Dal interface {
