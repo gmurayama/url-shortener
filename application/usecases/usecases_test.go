@@ -2,12 +2,13 @@ package usecases
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/gmurayama/url-shortner/application"
 	"github.com/gmurayama/url-shortner/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestShorten(t *testing.T) {
@@ -80,5 +81,4 @@ func TestShorten(t *testing.T) {
 		assert.NotEmpty(t, res)
 		assert.NoError(t, err)
 	})
-
 }
