@@ -23,7 +23,7 @@ type Settings struct {
 	SamplingRatio      float64
 	Enabled            bool
 	BatchScheduleDelay time.Duration
-	MaxQueueSize       int
+	MaxExportBatchSize int
 	KeepAliveTime      time.Duration
 	KeepAliveTimeout   time.Duration
 }
@@ -73,7 +73,7 @@ func Configure(
 		),
 		trace.WithBatcher(
 			traceExporter,
-			trace.WithMaxQueueSize(settings.MaxQueueSize),
+			trace.WithMaxExportBatchSize(settings.MaxExportBatchSize),
 			trace.WithBatchTimeout(settings.BatchScheduleDelay),
 		),
 		trace.WithResource(traceResource),
