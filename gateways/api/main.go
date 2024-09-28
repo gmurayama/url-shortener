@@ -3,51 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	log "log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/gmurayama/url-shortner/gateways/api/server"
+	"github.com/gmurayama/url-shortner/gateways/api/app"
 	"github.com/gmurayama/url-shortner/infrastructure/tracing"
-	"github.com/gofiber/contrib/otelfiber/v2"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
-
-type Config struct {
-	Application struct {
-		Name         string        `env:"NAME" envDefault:"URL Shortener"`
-		Address      string        `env:"ADDR" envDefault:"localhost"`
-		Port         int           `env:"PORT" envDefault:"8080"`
-		ReadTimeout  time.Duration `env:"READ_TIMEOUT" envDefault:"2s"`
-		WriteTimeout time.Duration `env:"WRITE_TIMEOUT" envDefault:"2s"`
-		Timeout      time.Duration `env:"TIMEOUT" envDefault:"2s"`
-	} `envPrefix:"APP_"`
-	Tracing struct {
-		Host               string        `env:"HOST" envDefault:"localhost"`
-		Port               int           `env:"PORT" envDefault:"4317"`
-		Enabled            bool          `env:"ENABLED" envDefault:"true"`
-		BatchScheduleDelay time.Duration `env:"BATCH_SCHEDULE_DELAY" envDefault:"5s"`
-		SamplingRatio      float64       `env:"SAMPLING_RATIO" envDefault:"1.0"`
-		MaxExportBatchSize int           `env:"MAX_EXPORT_BATCH_SIZE" envDefault:"256"`
-		KeepAliveTime      time.Duration `env:"KEEP_ALIVE_TIME" envDefault:"20s"`
-		KeepAliveTimeout   time.Duration `env:"KEEP_ALIVE_TIMEOUT" envDefault:"5s"`
-	} `envPrefix:"TRACING_"`
-}
 
 func main() {
 	ctx := context.Background()
 
-	cfg, err := env.ParseAsWithOptions[Config](env.Options{
+	cfg, err := env.ParseAsWithOptions[app.Config](env.Options{
 		Prefix: "SH_",
 	})
 	if err != nil {
-		log.Panic("could not load config", err)
+		log.Error("could not load config", "error", err)
+		panic(err)
 	}
 
 	s, err := tracing.Configure(ctx, tracing.Settings{
@@ -62,30 +37,38 @@ func main() {
 		KeepAliveTimeout:   cfg.Tracing.KeepAliveTimeout,
 	})
 	if err != nil {
-		log.Panic("could not set tracing", err)
+		log.Error("could not set tracing", "error", err)
+		panic(err)
 	}
 	defer s(ctx)
 
-	app := fiber.New(fiber.Config{
-		ReadTimeout:  cfg.Application.ReadTimeout,
-		WriteTimeout: cfg.Application.WriteTimeout,
-	})
-
-	app.Use(otelfiber.Middleware())
-	app.Use(recover.New())
-	app.Use(timeout.NewWithContext(func(c *fiber.Ctx) error { return c.Next() }, cfg.Application.Timeout))
-	server.RegisterRoutes(app)
-
+	svr := app.NewServer(cfg)
 	go func() {
 		addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {
-			log.Panic(err)
+			log.Error("error starting listener", "address", addr)
+			panic(err)
 		}
-		log.Println("Listening on", addr)
+		log.Info(fmt.Sprintf("Listening on %s", addr))
 
-		if err := app.Listener(listener); err != nil {
-			log.Panic(err)
+		if err := svr.Listener(listener); err != nil {
+			log.Error("error on server", "error", err)
+		}
+	}()
+
+	internal := app.NewInternal(cfg)
+	go func() {
+		addr := fmt.Sprintf("%s:%d", cfg.Internal.Address, cfg.Internal.Port)
+		listener, err := net.Listen("tcp", addr)
+		if err != nil {
+			log.Error("error starting listener", "address", addr)
+			panic(err)
+		}
+		log.Info(fmt.Sprintf("Listening on %s", addr))
+
+		if err := internal.Listener(listener); err != nil {
+			log.Error("error on internal server", "error", err)
 		}
 	}()
 
@@ -94,7 +77,7 @@ func main() {
 	<-c
 
 	fmt.Println("Gracefully shutting down...")
-	_ = app.Shutdown()
+	_ = svr.Shutdown()
 
-	log.Println("Running cleanup tasks...")
+	log.Info("Running cleanup tasks...")
 }
