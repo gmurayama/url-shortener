@@ -4,23 +4,29 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/gmurayama/url-shortner/gateways/api/server"
 	"github.com/gmurayama/url-shortner/infrastructure/tracing"
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
 type Config struct {
 	Application struct {
-		Name    string `env:"NAME" envDefault:"URL Shortener"`
-		Address string `env:"ADDR" envDefault:"localhost"`
-		Port    int    `env:"PORT" envDefault:"8080"`
+		Name         string        `env:"NAME" envDefault:"URL Shortener"`
+		Address      string        `env:"ADDR" envDefault:"localhost"`
+		Port         int           `env:"PORT" envDefault:"8080"`
+		ReadTimeout  time.Duration `env:"READ_TIMEOUT" envDefault:"2s"`
+		WriteTimeout time.Duration `env:"WRITE_TIMEOUT" envDefault:"2s"`
+		Timeout      time.Duration `env:"TIMEOUT" envDefault:"2s"`
 	} `envPrefix:"APP_"`
 	Tracing struct {
 		Host               string        `env:"HOST" envDefault:"localhost"`
@@ -60,30 +66,33 @@ func main() {
 	}
 	defer s(ctx)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ReadTimeout:  cfg.Application.ReadTimeout,
+		WriteTimeout: cfg.Application.WriteTimeout,
+	})
 
 	app.Use(otelfiber.Middleware())
 	app.Use(recover.New())
-
-	app.Post("/v1/create", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
-	app.Get("/:short", func(c *fiber.Ctx) error {
-		return nil
-	})
+	app.Use(timeout.NewWithContext(func(c *fiber.Ctx) error { return c.Next() }, cfg.Application.Timeout))
+	server.RegisterRoutes(app)
 
 	go func() {
 		addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
+		listener, err := net.Listen("tcp", addr)
+		if err != nil {
+			log.Panic(err)
+		}
 		log.Println("Listening on", addr)
-		if err := app.Listen(addr); err != nil {
+
+		if err := app.Listener(listener); err != nil {
 			log.Panic(err)
 		}
 	}()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
 	<-c
+
 	fmt.Println("Gracefully shutting down...")
 	_ = app.Shutdown()
 
