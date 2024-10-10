@@ -13,11 +13,12 @@ import (
 
 	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewServer(cfg Config) *fiber.App {
@@ -47,6 +48,7 @@ func NewInternal(cfg Config) *fiber.App {
 
 	app.Use(healthcheck.New())
 	app.Use(pprof.New())
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	return app
 }
@@ -54,13 +56,13 @@ func NewInternal(cfg Config) *fiber.App {
 func StartServer(app *fiber.App, addr string) {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Error("error starting listener", "address", addr)
+		slog.Error("error starting listener", "appName", app.Config().AppName, "address", addr)
 		panic(err)
 	}
-	log.Info(fmt.Sprintf("Listening on %s", addr))
+	slog.Info(fmt.Sprintf("Listening on %s", addr))
 
 	if err := app.Listener(listener); err != nil {
-		log.Error(fmt.Sprintf("error on server %s", addr), "error", err)
+		slog.Error(fmt.Sprintf("error on server %s", addr), "error", err)
 	}
 }
 

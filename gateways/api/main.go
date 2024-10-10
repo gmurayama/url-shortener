@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	log "log/slog"
+	"log/slog"
+	"os"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/gmurayama/url-shortner/gateways/api/app"
@@ -11,14 +12,23 @@ import (
 )
 
 func main() {
+	var code int
+	if err := run(); err != nil {
+		code = 1
+	}
+
+	os.Exit(code)
+}
+
+func run() error {
 	ctx := context.Background()
 
 	cfg, err := env.ParseAsWithOptions[app.Config](env.Options{
 		Prefix: "SH_",
 	})
 	if err != nil {
-		log.Error("could not load config", "error", err)
-		panic(err)
+		slog.Error("could not load config", "error", err)
+		return err
 	}
 
 	s, err := tracing.Configure(ctx, tracing.Settings{
@@ -33,8 +43,8 @@ func main() {
 		KeepAliveTimeout:   cfg.Tracing.KeepAliveTimeout,
 	})
 	if err != nil {
-		log.Error("could not set tracing", "error", err)
-		panic(err)
+		slog.Error("could not set tracing", "error", err)
+		return err
 	}
 	defer s(ctx)
 
@@ -42,8 +52,11 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
 	go app.StartServer(svr, addr)
 
+	addr = fmt.Sprintf("%s:%d", cfg.Internal.Address, cfg.Internal.Port)
 	internal := app.NewInternal(cfg)
 	go app.StartServer(internal, addr)
 
 	app.GracefulShutdown(ctx, cfg.Application.ShutdownTimeout, svr, internal)
+
+	return nil
 }

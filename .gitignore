@@ -29,3 +29,6 @@ go.work.sum
 
 # Docker containers' data
 .docker
+
+# Build
+build/
