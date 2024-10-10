@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 	log "log/slog"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/gmurayama/url-shortner/gateways/api/app"
@@ -43,41 +39,11 @@ func main() {
 	defer s(ctx)
 
 	svr := app.NewServer(cfg)
-	go func() {
-		addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
-		listener, err := net.Listen("tcp", addr)
-		if err != nil {
-			log.Error("error starting listener", "address", addr)
-			panic(err)
-		}
-		log.Info(fmt.Sprintf("Listening on %s", addr))
-
-		if err := svr.Listener(listener); err != nil {
-			log.Error("error on server", "error", err)
-		}
-	}()
+	addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
+	go app.StartServer(svr, addr)
 
 	internal := app.NewInternal(cfg)
-	go func() {
-		addr := fmt.Sprintf("%s:%d", cfg.Internal.Address, cfg.Internal.Port)
-		listener, err := net.Listen("tcp", addr)
-		if err != nil {
-			log.Error("error starting listener", "address", addr)
-			panic(err)
-		}
-		log.Info(fmt.Sprintf("Listening on %s", addr))
+	go app.StartServer(internal, addr)
 
-		if err := internal.Listener(listener); err != nil {
-			log.Error("error on internal server", "error", err)
-		}
-	}()
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-
-	fmt.Println("Gracefully shutting down...")
-	_ = svr.Shutdown()
-
-	log.Info("Running cleanup tasks...")
+	app.GracefulShutdown(ctx, cfg.Application.ShutdownTimeout, svr, internal)
 }
