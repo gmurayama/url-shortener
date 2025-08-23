@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewServer(cfg Config) *fiber.App {
+func New(cfg Config) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ReadTimeout:           cfg.Application.ReadTimeout,
 		WriteTimeout:          cfg.Application.WriteTimeout,
@@ -53,7 +53,7 @@ func NewInternal(cfg Config) *fiber.App {
 	return app
 }
 
-func StartServer(app *fiber.App, addr string) {
+func Start(app *fiber.App, addr string) {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		slog.Error("error starting listener", "appName", app.Config().AppName, "address", addr)

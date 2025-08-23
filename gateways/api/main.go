@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/gmurayama/url-shortner/gateways/api/app"
+	"github.com/gmurayama/url-shortner/gateways/api/server"
 	"github.com/gmurayama/url-shortner/infrastructure/tracing"
 )
 
@@ -23,7 +23,7 @@ func main() {
 func run() error {
 	ctx := context.Background()
 
-	cfg, err := env.ParseAsWithOptions[app.Config](env.Options{
+	cfg, err := env.ParseAsWithOptions[server.Config](env.Options{
 		Prefix: "SH_",
 	})
 	if err != nil {
@@ -48,15 +48,15 @@ func run() error {
 	}
 	defer s(ctx)
 
-	svr := app.NewServer(cfg)
+	svr := server.New(cfg)
 	addr := fmt.Sprintf("%s:%d", cfg.Application.Address, cfg.Application.Port)
-	go app.StartServer(svr, addr)
+	go server.Start(svr, addr)
 
 	addr = fmt.Sprintf("%s:%d", cfg.Internal.Address, cfg.Internal.Port)
-	internal := app.NewInternal(cfg)
-	go app.StartServer(internal, addr)
+	internal := server.NewInternal(cfg)
+	go server.Start(internal, addr)
 
-	app.GracefulShutdown(ctx, cfg.Application.ShutdownTimeout, svr, internal)
+	server.GracefulShutdown(ctx, cfg.Application.ShutdownTimeout, svr, internal)
 
 	return nil
 }
