@@ -1,8 +1,21 @@
-GOMOCK = go run go.uber.org/mock/mockgen@v0.4.0
+.PHONY: run/api help/api
 
-.PHONY: mocks run
-mocks:
-	$(GOMOCK) -source=application/interfaces.go -destination=mocks/application.go -package=mocks
+run/api:
+	go run ./cmd/api/...
 
-run:
-	go run gateways/api/main.go
+help/api:
+	go run ./cmd/api/... --help
+
+.PHONY: docker-build/multi-arch docker-build/arm64 docker-build/amd64
+
+docker-build:
+	docker buildx build --load --platform $(DOCKER_PLATFORM) -t $(DOCKER_TAG) -f Dockerfile .
+
+docker-build/multi-arch:
+	make docker-build DOCKER_PLATFORM="linux/arm64,linux/amd64"
+
+docker-build/arm64:
+	make docker-build DOCKER_PLATFORM="linux/arm64"
+
+docker-build/amd64:
+	make docker-build DOCKER_PLATFORM="linux/amd64"
