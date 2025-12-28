@@ -8,10 +8,10 @@ import (
 	"os"
 
 	"github.com/ardanlabs/conf/v3"
-	"github.com/gmurayama/webservice-template-golang/config"
-	"github.com/gmurayama/webservice-template-golang/internal/commons/server"
-	"github.com/gmurayama/webservice-template-golang/internal/gateways/api"
-	"github.com/gmurayama/webservice-template-golang/internal/infrastructure/tracing"
+	"github.com/gmurayama/url-shortener/config"
+	"github.com/gmurayama/url-shortener/internal/commons/server"
+	"github.com/gmurayama/url-shortener/internal/gateways/api"
+	"github.com/gmurayama/url-shortener/internal/infrastructure/tracing"
 )
 
 func main() {

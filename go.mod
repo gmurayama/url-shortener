@@ -1,4 +1,4 @@
-module github.com/gmurayama/webservice-template-golang
+module github.com/gmurayama/url-shortener
 
 go 1.25
 

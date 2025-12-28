@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gmurayama/webservice-template-golang/config"
-	"github.com/gmurayama/webservice-template-golang/internal/gateways/api/handlers"
+	"github.com/gmurayama/url-shortener/config"
+	"github.com/gmurayama/url-shortener/internal/application"
+	"github.com/gmurayama/url-shortener/internal/gateways/api/handlers"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func New(cfg *config.Config) http.Handler {
-	healthcheckHandler := handlers.NewHealthcheckHandler()
-
 	r := gin.Default()
 	r.Use(otelgin.Middleware(
 		cfg.Application.Name,
@@ -32,7 +31,13 @@ func New(cfg *config.Config) http.Handler {
 			Observe(float64(duration.Milliseconds()))
 	})
 
+	shortenUseCase := application.NewShortenUseCase()
+
+	healthcheckHandler := handlers.NewHealthcheckHandler()
+	urlHandler := handlers.NewURLHandler(shortenUseCase)
+
 	r.GET("/healthz", healthcheckHandler.Handler)
+	r.POST("/shorten", urlHandler.Shorten)
 
 	return r
 }
