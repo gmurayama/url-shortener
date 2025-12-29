@@ -28,4 +28,4 @@ jobs:
       - name: Build
         run: |
           echo "Starting docker build with tag \"${{ gitea.ref_name }}\""
-          make docker-build-push/multi-arch TAG="${{ vars.DOCKER_REGISTRY }}:${{ gitea.ref_name }}"
+          make docker-build-push/multi-arch DOCKER_TAG="${{ vars.DOCKER_REGISTRY }}:${{ gitea.ref_name }}"
