@@ -24,14 +24,18 @@ func New(ctx context.Context, cfg *config.Config) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	shortenUseCase := application.NewShortenUseCase(pgConn)
 	shortenUseCase.RegisterMetrics()
 
+	getURLUseCase := application.NewGetURLUseCase(pgConn)
+
 	healthcheckHandler := handlers.NewHealthcheckHandler()
-	urlHandler := handlers.NewURLHandler(shortenUseCase)
+	urlHandler := handlers.NewURLHandler(shortenUseCase, getURLUseCase)
 
 	r.GET("/healthz", healthcheckHandler.Handler)
 	r.POST("/shorten", urlHandler.Shorten)
+	r.GET("/url/:shortened", urlHandler.GetURL)
 
 	return r, nil
 }
