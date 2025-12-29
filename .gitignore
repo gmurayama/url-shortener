@@ -22,7 +22,7 @@ go.work
 go.work.sum
 
 # Build artifacts
-build/
+build
 
 # env file
 .env

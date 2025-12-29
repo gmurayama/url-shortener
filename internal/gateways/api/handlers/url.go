@@ -8,17 +8,17 @@ import (
 )
 
 type URLHandler struct {
-	shortenUrlUseCase application.ShortenUseCase
+	shortenURLUseCase application.ShortenUseCase
 }
 
 func NewURLHandler(shortenUseCase application.ShortenUseCase) URLHandler {
 	return URLHandler{
-		shortenUrlUseCase: shortenUseCase,
+		shortenURLUseCase: shortenUseCase,
 	}
 }
 
 type ShortenRequest struct {
-	Url string `binding:"url"`
+	URL string `binding:"url"`
 }
 
 func (h *URLHandler) Shorten(c *gin.Context) {
@@ -28,7 +28,7 @@ func (h *URLHandler) Shorten(c *gin.Context) {
 		return
 	}
 
-	shorten := h.shortenUrlUseCase.Shorten(req.Url)
+	shorten := h.shortenURLUseCase.Shorten(c.Request.Context(), req.URL)
 
 	c.JSON(http.StatusOK, gin.H{"shorten": shorten})
 }

@@ -13,10 +13,16 @@ type Config struct {
 		Name string `conf:"default:URL Shortener"`
 	}
 	Server struct {
-		Address         string        `conf:"default:0.0.0.0:8080"`
+		Address         string        `conf:"default:0.0.0.0:7000"`
 		ReadTimeout     time.Duration `conf:"default:2s"`
 		WriteTimeout    time.Duration `conf:"default:2s"`
 		ShutdownTimeout time.Duration `conf:"default:5s"`
+	}
+	InternalServer struct {
+		Address      string        `conf:"default:0.0.0.0:7001"`
+		ReadTimeout  time.Duration `conf:"default:5s"`
+		WriteTimeout time.Duration `conf:"default:5s"`
+		EnablePprof  bool          `conf:"default:false"`
 	}
 	Tracing struct {
 		Host               string        `conf:"default:localhost"`
@@ -28,11 +34,8 @@ type Config struct {
 		KeepAliveTime      time.Duration `conf:"default:20s"`
 		KeepAliveTimeout   time.Duration `conf:"default:5s"`
 	}
-	InternalServer struct {
-		Address      string        `conf:"default:0.0.0.0:9090"`
-		ReadTimeout  time.Duration `conf:"default:5s"`
-		WriteTimeout time.Duration `conf:"default:5s"`
-		EnablePprof  bool          `conf:"default:false"`
+	Database struct {
+		ConnString string `conf:"default:postgresql://postgres:password@localhost:5432/url_shortener,mask"`
 	}
 }
 

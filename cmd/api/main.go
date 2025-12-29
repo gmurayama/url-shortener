@@ -50,7 +50,10 @@ func run() error {
 	}
 	defer s(ctx)
 
-	apiImpl := api.New(&cfg)
+	apiImpl, err := api.New(ctx, &cfg)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:         cfg.Server.Address,
 		ReadTimeout:  cfg.Server.ReadTimeout,
