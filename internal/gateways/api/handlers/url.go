@@ -28,7 +28,11 @@ func (h *URLHandler) Shorten(c *gin.Context) {
 		return
 	}
 
-	shorten := h.shortenURLUseCase.Shorten(c.Request.Context(), req.URL)
+	shorten, err := h.shortenURLUseCase.Shorten(c.Request.Context(), req.URL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"shorten": shorten})
 }

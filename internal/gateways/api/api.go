@@ -25,6 +25,7 @@ func New(ctx context.Context, cfg *config.Config) (http.Handler, error) {
 		return nil, err
 	}
 	shortenUseCase := application.NewShortenUseCase(pgConn)
+	shortenUseCase.RegisterMetrics()
 
 	healthcheckHandler := handlers.NewHealthcheckHandler()
 	urlHandler := handlers.NewURLHandler(shortenUseCase)
