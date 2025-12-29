@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  DOCKER_HOST: tcp://docker:2376/
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "/certs/client"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        run: |
+          echo "Starting docker build with tag \"${{ gitea.ref_name }}\""
+          make docker-build-push/multi-arch TAG="${{ vars.DOCKER_REGISTRY }}:${{ gitea.ref_name }}"
