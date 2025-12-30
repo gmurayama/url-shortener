@@ -1,0 +1,8 @@
+.docker
+.git
+*.md
+.gitignore
+
+prometheus.yaml
+build
+docs
