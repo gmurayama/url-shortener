@@ -3,7 +3,7 @@ package application
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -59,10 +59,8 @@ func (uc *ShortenUseCase) Shorten(ctx context.Context, url string) (string, erro
 			urlToHash = fmt.Sprintf("%s%c", urlToHash, rune(asciiChar))
 		}
 
-		h := sha256.New()
-		h.Write([]byte(urlToHash))
-		hash := h.Sum(nil)
-		hashString := hex.EncodeToString(hash[:])
+		hash := sha256.Sum256([]byte(urlToHash))
+		hashString := base64.URLEncoding.EncodeToString(hash[:])
 		shortened := hashString[:7]
 
 		slog.Debug("generated urlHash",
