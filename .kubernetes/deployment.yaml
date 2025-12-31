@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: url-shortener-api
+  namespace: url-shortener
+  labels:
+    app: url-shortener-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: url-shortener-api
+  template:
+    metadata:
+      labels:
+        app: url-shortener-api
+    spec:
+      containers:
+        - image: ${IMAGE}
+          name: url-shortener-api
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: url-shortener-api-http
+              containerPort: 7000
+          env:
+            - name: APP_APP_HOST
+              value: 0.0.0.0
+            - name: APP_DATABASE_URL
+              value: ${DATABASE_URL}
