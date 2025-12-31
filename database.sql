@@ -1,6 +1,5 @@
 BEGIN;
 
-
 CREATE TABLE IF NOT EXISTS public.urls
 (
     shortened character varying(7) NOT NULL,
